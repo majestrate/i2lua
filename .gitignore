@@ -1,0 +1,10 @@
+# emacs files
+*~
+.\#*
+\#*
+
+# object files
+*.o
+
+# cmake build directory
+build
