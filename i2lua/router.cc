@@ -55,10 +55,11 @@ namespace i2p
       }
       if(msg)
         return luaL_error(L, "error while starting: %s", msg);
-      if(lua_isfunction(L, 1)) {
+
+      // call callback
+      if(lua_gettop(L) > 0 && lua_isfunction(L, 1)) {
         lua_pushvalue(L, 1);
         lua_call(L, 0, 0);
-        lua_pop(L, 1);
       }
       lua_pushnil(L);
       return 1;

@@ -107,7 +107,7 @@ namespace lua
   {
     // get number of args
     int n = lua_gettop(L);
-    if ( n != 3) {
+    if ( n != 2) {
       // bad number of args
       return luaL_error(L, "incorrect number of arguments: %i", n);
     }
@@ -118,30 +118,16 @@ namespace lua
     if(!lua_isfunction(L, 2)) {
       return luaL_error(L, "second argument is not a function");
     }
-    int errorfunc = 0;
-    if (lua_isfunction(L, 3)) {
-      // we have an error function
-      errorfunc = 3;
-    }
     // get RI
     auto ri = FindRouterByHash(str);
     // push callback
     lua_pushvalue(L, 2);
     if(ri)
-      lua_pushlightuserdata(L, ri.get());
+      pushRouterInfo(L, *ri);
     else
       lua_pushnil(L);
-    auto result = lua_pcall(L, 1, 0, errorfunc);
-    if(result) {
-      // error handling callback
-      if(result == LUA_ERRRUN) {
-        // runtime error
-        return luaL_error(L, "runtime error visiting RI %s", str);
-      } else {
-        // another error, really bad
-        return luaL_error(L, "really bad error happened: %d", result);
-      }
-    }
+    // call callback
+    lua_call(L, 1, 0);
     lua_pushnil(L);
     return 1;
   }
