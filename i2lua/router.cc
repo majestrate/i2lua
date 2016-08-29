@@ -18,38 +18,47 @@ namespace i2p
     std::promise<void> complete;
 
     int l_InitRouter(lua_State* L) {
-  
-      char * err_msg = nullptr;
-      // try initializing config
-      try {
-        i2p::config::Init();
-      } catch (std::exception & ex) {
-        err_msg = (char*) ex.what();
+      char * errmsg = nullptr;
+      int n = lua_gettop(L);
+      if (n && lua_isstring(L, 1)) {
+        std::string conf = luaL_checkstring(L, 1);
+        // try initializing config
+        try {
+          i2p::config::Init();
+          i2p::config::ParseConfig(conf);
+          std::string datadir; i2p::config::GetOption("datadir", datadir);
+
+          i2p::fs::DetectDataDir(datadir);
+          i2p::fs::Init();
+          i2p::config::Finalize();
+        } catch (std::exception & ex) {
+          errmsg = (char*) ex.what();
+          std::cerr << ex.what() << std::endl;
+        }
+        if(errmsg) {
+          return luaL_error(L, "error initializing config: %s",  errmsg);
+        }
+        lua_pushnil(L);
+        return 1;
       }
-      if (err_msg) {
-        return luaL_error(L, "error initializing config: %s", err_msg);
-      }
-      // try setting config options
-      try {
-        
-      } catch ( std::exception & ex) {
-        err_msg = (char*) ex.what();
-      }
-      if (err_msg) {
-        return luaL_error(L, "error setting config options: %s", err_msg);
-      }
-      lua_pushnil(L);
-      return 1;
+      return luaL_error(L, "bad arguments: %d", n);
     }
     
     int l_StartRouter(lua_State* L) {
-      char * err = nullptr;
+      char * msg = nullptr;
       try {
         i2p::data::netdb.Start();
         i2p::transport::transports.Start();
         i2p::tunnel::tunnels.Start();
       } catch( std::runtime_error & ex ) {
-        return luaL_error(L, "error while initializing: %s", ex.what());
+        msg = (char*) ex.what();
+      }
+      if(msg)
+        return luaL_error(L, "error while starting: %s", msg);
+      if(lua_isfunction(L, 1)) {
+        lua_pushvalue(L, 1);
+        lua_call(L, 0, 0);
+        lua_pop(L, 1);
       }
       lua_pushnil(L);
       return 1;
@@ -75,7 +84,7 @@ namespace i2p
     int l_Sleep(lua_State* L) {
       int n = lua_gettop(L);
       if ( n != 1 ) {
-        return luaL_error(L, "invalid number of arguments: %d", n);
+        return luaL_argerror(L, 1, "");
       }
       if (!lua_isnumber(L, 1)) {
         return luaL_argerror(L, 1, "not an integer");

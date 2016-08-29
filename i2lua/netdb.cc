@@ -19,67 +19,88 @@ namespace lua
     });
   }
 
-  // push router info as meta table onto stack
-  static void pushRouterInfo(lua_State *L, const i2p::data::RouterInfo & ri) {
+  // push router info as meta table onto stack, return stack index of meta table
+  void pushRouterInfo(lua_State *L, const i2p::data::RouterInfo & ri) {
     lua_newtable(L);
+    int table = lua_gettop(L);
     // floodfill
     lua_pushboolean(L, ri.IsFloodfill());
-    lua_setfield(L, lua_gettop(L), "floodfill");
+    lua_setfield(L, table, "floodfill");
+    // reachable
+    lua_pushboolean(L, ri.IsReachable());
+    lua_setfield(L, table, "reachable");
     // base64 ident
     auto ident = ri.GetIdentHashBase64();
     lua_pushstring(L, ident.c_str());
-    lua_setfield(L, lua_gettop(L), "ident");
+    lua_setfield(L, table, "ident");
+    // ssu addresses
+    auto ssu4 = ri.GetSSUAddress();
+    if(ssu4) {
+      lua_pushstring(L, ssu4->host.to_string().c_str());
+      lua_setfield(L, table, "ssu");
+    }
+    // ssu6 address
+    auto ssu6 = ri.GetSSUV6Address();
+    if(ssu6) {
+      lua_pushstring(L, ssu6->host.to_string().c_str());
+      lua_setfield(L, table, "ssu6");
+    }
+    // ntcp address
+    auto ntcp = ri.GetNTCPAddress();
+    if(ntcp) {
+      lua_pushstring(L, ntcp->host.to_string().c_str());
+      lua_setfield(L, table, "ntcp");
+    }
   }
 
   // call a lua function as router info filter
   class LuaRouterInfoFilter : public IRouterInfoFilter {
 
   public:
-    LuaRouterInfoFilter(lua_State *state, int filter, int error=0) :
-      L(state),
-      filterfunc(filter),
-      errorfunc(error) {}
+    LuaRouterInfoFilter(lua_State *state, int filter) :
+      L(state) {
+      lua_pushvalue(state, filter);
+      filterfunc = lua_gettop(state);
+    }
+
+    ~LuaRouterInfoFilter() {
+      lua_remove(L, filterfunc);
+    }
     
     virtual bool Filter(const RI & ri) {
       lua_pushvalue(L, filterfunc);
       pushRouterInfo(L, ri);
-      int err = lua_pcall(L, 1, 1, errorfunc);
-      bool result = err == 0 && lua_toboolean(L, -1);
-      lua_pop(L, 1);
-      return result;
+      lua_call(L, 1, 1);
+      return lua_toboolean(L, -1);
     }
   private:
     lua_State * L;
     int filterfunc;
-    int errorfunc;
   };
 
   // visit a router info with a lua function
   class LuaRouterInfoVisitor : public IRouterInfoVisitor {
 
   public:
-    LuaRouterInfoVisitor(lua_State *state, int visit, int error=0) :
-      L(state),
-      visitfunc(visit),
-      errorfunc(error) {}
+    LuaRouterInfoVisitor(lua_State *state, int visit) :
+      L(state) {
+      lua_pushvalue(state, visit);
+      visitfunc = lua_gettop(state);
+    }
 
+    ~LuaRouterInfoVisitor() {
+      lua_remove(L, visitfunc);
+    }
+    
     virtual void VisitRouterInfo(const RI & ri) {
       lua_pushvalue(L, visitfunc);
       pushRouterInfo(L, ri);
-      int result = lua_pcall(L, 1, 0, errorfunc);
-      if (result == LUA_ERRRUN) {
-        // runtime error
-        return;
-      } else if(result) {
-        // some other error
-        throw std::runtime_error("fatal lua error while visiting router info");
-      }
+      lua_call(L, 1, 0);
     }
     
   private:
     lua_State * L;
     int visitfunc;
-    int errorfunc;
   };
   
   int l_VisitRIByHash(lua_State *L)
@@ -121,27 +142,28 @@ namespace lua
         return luaL_error(L, "really bad error happened: %d", result);
       }
     }
-    return 0;
+    lua_pushnil(L);
+    return 1;
   }
 
   int l_VisitRIWithFilter(lua_State *L)
   {
     int n = lua_gettop(L);
-    if ( n != 3) {
+    if ( n != 2) {
       // bad number of args
-      return luaL_error(L, "incorrect number of arguments: %i", n);
+      return luaL_error(L, "incorrect number of arguments: %d", n);
     }
     if (lua_isfunction(L, 1) && lua_isfunction(L, 2)) {
-      int filterFunc = 1;
-      int visitFunc = 2;
-      int errorFunc = 0;
-      if (lua_isfunction(L, 3)) {
-        errorFunc = 3;
-      }
-      LuaRouterInfoFilter f(L, filterFunc, errorFunc);
-      LuaRouterInfoVisitor v(L, visitFunc, errorFunc);
+      lua_pushvalue(L, 1);
+      int filterFunc = lua_gettop(L);
+      lua_pushvalue(L, 2);
+      int visitFunc = lua_gettop(L);
+      LuaRouterInfoFilter f(L, filterFunc);
+      LuaRouterInfoVisitor v(L, visitFunc);
       VisitRoutersByFilter(&v, &f);
-      return 0;
+      lua_pop(L, 2);
+      lua_pushnil(L);
+      return 1;
     }
     return luaL_error(L, "bad arguments, must pass 2 functions");
   }
