@@ -7,6 +7,7 @@ set(I2LUA_SRC
   "i2lua/main.cc"
   "i2lua/netdb.cc"
   "i2lua/router.cc"
+  "i2lua/destination.cc"
 )
 include_directories("${LUA_INCLUDE_DIR}")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/")
