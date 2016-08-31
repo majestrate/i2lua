@@ -1,5 +1,5 @@
--- load helper library
-local i2lua = require("runtime.lua")
+-- load helper library (assumes you are in the root directory of the repo)
+local i2lua = require("./contrib/runtime/runtime.lua")
 
 -- this function returns true if we want to use this RI in tunnel building at hop
 function filterRI(ri, hopNumber, inbound)
