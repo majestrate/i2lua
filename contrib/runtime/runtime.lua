@@ -72,7 +72,7 @@ end
 function I2Lua.Destination:_onCreated(dest)
    self:_dest = dest
    if self:_selector != nil then
-      i2p.DestinationSetPeerSelector(self:_dest, self:_selector:selectPeers)
+      i2p.DestinationSetPeerSelector(self:_dest, self:_selector:_selectPeers)
    end
    i2p.RunDestination(self:_dest)
 end
