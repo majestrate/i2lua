@@ -25,4 +25,4 @@ running:
 
     ./build/i2lua ./contrib/examples/example.lua
 
-see (contrib/examples/)[here] for example scripts (work in progress)
+see [here](contrib/examples/) for example scripts (work in progress)
