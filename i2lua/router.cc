@@ -8,7 +8,7 @@
 #include "i2pd/Tunnel.h"
 #include "i2pd/Transports.h"
 #include "i2pd/NetDb.h"
-
+#include "i2pd/Log.h"
 
 
 namespace i2p
@@ -47,6 +47,9 @@ namespace i2p
     int l_StartRouter(lua_State* L) {
       char * msg = nullptr;
       try {
+        i2p::log::Logger().Ready();
+        i2p::crypto::InitCrypto(false);
+        i2p::context.Init();
         i2p::data::netdb.Start();
         i2p::transport::transports.Start();
         i2p::tunnel::tunnels.Start();

@@ -17,9 +17,11 @@ namespace i2p
       {"Sleep", l_Sleep},
       {"VisitRIByHash", l_VisitRIByHash},
       {"VisitRIWithFilter", l_VisitRIWithFilter},
+      {"VisitRandomRIWithFilter", l_VisitRandomRIWithFilter},
       {"NewDestination", l_CreateDestination},
       {"DelDestination", l_DestroyDestination},
       {"DestinationSetPeerSelector", l_SetDestinationPeerSelector},
+      {"RunDestination", l_RunDestination},
       {0, 0}
     };
   }

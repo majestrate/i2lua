@@ -15,23 +15,41 @@ namespace lua
   /** interface defining a router info filter algorithm */
   struct IRouterInfoFilter
   {
-    typedef i2p::data::RouterInfo RI;
+    typedef std::shared_ptr<const i2p::data::RouterInfo> RI;
     /** return true if this filter matches this router info */
-    virtual bool Filter(const RI & ri) = 0;
+    virtual bool Filter(RI ri) = 0;
   };
 
   /** interface defining an entity that can visit all router infos in the netdb */
   struct IRouterInfoVisitor
   {
-    typedef i2p::data::RouterInfo RI;
-    virtual void VisitRouterInfo(const RI & ri) = 0;
+    typedef std::shared_ptr<const i2p::data::RouterInfo> RI;
+    virtual void VisitRouterInfo(RI ri) = 0;
   };
   
   /** iterate over the netdb, filter matches, if exclude is true then the filter will be inverted */
   void VisitRoutersByFilter(IRouterInfoVisitor * visitor, IRouterInfoFilter * filter, bool exclude=false);
 
+  /** visit N random router infos that match a filter, return how many we actually visited */
+  size_t VisitRandomRouterByFilter(IRouterInfoVisitor * visitor, IRouterInfoFilter * filter, size_t n);
+
+  /** 
+   *   f(ident, visitor)
+   *   visitor(ri) 
+   */
   int l_VisitRIByHash(lua_State *L);
+  /**
+   *   f(visitor, filter)
+   *   visitor(ri)
+   *   filter(ri) returns bool
+   */
   int l_VisitRIWithFilter(lua_State *L);
+  /**
+   *   f(visitor, filter, max)
+   *   visitor(ri)
+   *   filter(ri) returns bool
+   */
+  int l_VisitRandomRIWithFilter(lua_State* L);
 }
 }
 

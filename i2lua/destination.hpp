@@ -21,18 +21,24 @@ namespace i2p
        
       lua_State* L; // called in destination thread
       int callback;
+      int thread;
+      std::mutex LMutex;
     };
 
     /**
        
      */
     struct TunnelPathBuilder {
-
+      typedef std::function<void(const i2p::data::IdentHash &)> HopVistitor;
       /* push a hop into hops */
       void PushHop(const std::string & ident);
-      
+      /** visit each hop sequentially */
+      void Visit(HopVistitor v);
+      /** return how many hops we have currently */
+      size_t GetHops();
       // idents of hops to use in order of build
       std::vector<i2p::data::IdentHash> hops;
+      std::mutex hopsMutex;
     };
       
     // wrapper for Client Destination
@@ -40,7 +46,6 @@ namespace i2p
       typedef i2p::data::PrivateKeys Keys;
       Destination(const Keys & keys);
       std::shared_ptr<i2p::client::ClientDestination> Dest;
-      i2p::tunnel::TunnelPeerSelector TunnelBuilder;
       std::promise<void> done;
       void Start();
       void Run();
@@ -58,7 +63,7 @@ namespace i2p
     /** 
         set tunnel build peer selector
         f(destination, callback)
-        callback(tunnelPath, hops, isInbound) for every tunnel build
+        callback(pushhop, hops, isInbound) for every tunnel build
         callback must return true if selected enough peers otherwise must return false
      */
     int l_SetDestinationPeerSelector(lua_State* L);

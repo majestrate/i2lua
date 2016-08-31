@@ -1,5 +1,7 @@
 #include "destination.hpp"
+#include "log.hpp"
 #include "i2pd/Destination.h"
+#include "i2pd/Log.h"
 #include <fstream>
 
 namespace i2p
@@ -30,11 +32,11 @@ namespace i2p
       std::string filepath(keyfile);
       if (!i2p::fs::Exists(filepath)) {
         // no keys, generate new ones and save them
-        auto k = i2p::data::PrivateKeys::CreateRandomKeys(i2p::data::SIGNING_KEY_TYPE_EDDSA_SHA512_ED25519);
+        auto k = i2p::data::PrivateKeys::CreateRandomKeys();
         std::ofstream s(filepath, std::ofstream::binary | std::ofstream::out);
         size_t sz = k.GetFullLen();
         uint8_t * buf = new uint8_t[sz];
-        keys.ToBuffer(buf, sz);
+        k.ToBuffer(buf, sz);
         s.write((char *)buf, sz);
         delete [] buf;
       }
@@ -84,6 +86,8 @@ namespace i2p
       return 1;
     }
 
+    
+    
     Destination::Destination(const Keys & k) {
       Dest = std::make_shared<i2p::client::ClientDestination>(k, true);
     }
@@ -92,12 +96,8 @@ namespace i2p
       try { 
         done.set_value();
       } catch( std::future_error &) {}
-      auto & service = Dest->GetService();
-      auto pr = &p;
-      service.post([&, pr] () {
-          Dest->Stop();
-          pr->set_value();
-      });
+      Dest->Stop();
+      p.set_value();
     }
 
     void Destination::Run() {
@@ -106,41 +106,59 @@ namespace i2p
     }
     
     LuaTunnelPeerSelector::LuaTunnelPeerSelector(lua_State *state, int cb) {
-      L = lua_newthread(state);
-      lua_xmove(state, L, cb);
+      L = state;
+      lua_pushvalue(L, cb);
       callback = lua_gettop(L);
     }
 
-    LuaTunnelPeerSelector::~LuaTunnelPeerSelector() {}
+    LuaTunnelPeerSelector::~LuaTunnelPeerSelector() {
+    }
 
-    bool LuaTunnelPeerSelector::SelectPeers(TunnelPath & peer, int hops, bool isInbound) {
-      auto builder = std::make_shared<TunnelPathBuilder>();
+    static int l_PushPath(lua_State * L)
+    {
+      int args = lua_gettop(L);
+      if (args == 2 && lua_islightuserdata(L, 1) && lua_isstring(L, 2)) {
+        // correct number of arguments
+        TunnelPathBuilder * builder = (TunnelPathBuilder *) lua_touserdata(L, 1);
+        std::string ident(luaL_checkstring(L, 2));
+        builder->PushHop(ident);
+      }
+      lua_pushnil(L);
+      return 1;
+    }
+    
+    bool LuaTunnelPeerSelector::SelectPeers(TunnelPath & peers, int hops, bool isInbound) {\
+      std::lock_guard<std::mutex> lock(LMutex);
+      TunnelPathBuilder builder;
+      bool r = false;
       // call callback
+      int top = lua_gettop(L);
+      lua_pushvalue(L, thread);
       lua_pushvalue(L, callback);
-      lua_pushlightuserdata(L, builder.get());
+      lua_pushlightuserdata(L, &builder);
+      lua_pushcclosure(L, l_PushPath, 1);
       lua_pushinteger(L, hops);
       lua_pushboolean(L, isInbound);
-      auto result = lua_pcall(L, 3, 1, 0);
+      auto result = lua_pcall(L, 4, 1, 0);
       if(result == LUA_OK) {
         // success
-        if(lua_isboolean(L, lua_gettop(L))) {
-          // for each hop ...
-          for (const auto & ident : builder->hops) {
-            // lookup RouterInfo
-            auto ri = i2p::data::netdb.FindRouter(ident);
-            if (ri == nullptr) return false;
-            // push back the router identity
-            auto i = ri->GetRouterIdentity();
-            if(i) peer.push_back(i);
-          }
-          return true;
-        } else {
-          // failure to select
-          return false;
+        bool success = lua_toboolean(L, -1);
+        lua_pop(L, 1);
+        if(success) {
+          // successful select
+          builder.Visit([&peers] (const i2p::data::IdentHash & ih) {
+              auto ri = i2p::data::netdb.FindRouter(ih);
+              if(!ri) return;
+              auto ident = ri->GetRouterIdentity();
+              if(ident) peers.push_back(ident);
+          });
+          r = peers.size() == builder.GetHops();
         }
       } else {
-        return false;
+        // lua error
+        printStacktrace(L);
       }
+      return r;
     }
 
     int l_SetDestinationPeerSelector(lua_State* L) {
@@ -148,11 +166,9 @@ namespace i2p
       if(n == 2 && lua_islightuserdata(L, 1) && lua_isfunction(L, 2)) {
         // valid args
         auto dest = getDestination(L, 1);
-        // reset previous tunnel builder
-        if(dest->TunnelBuilder)
-          dest->TunnelBuilder = nullptr;
-        // assign new tunnel builder
-        dest->TunnelBuilder = std::make_shared<LuaTunnelPeerSelector>(L, 2);
+        // set builder
+        auto builder = std::make_shared<LuaTunnelPeerSelector>(L, 2);
+        dest->Dest->GetTunnelPool()->SetCustomPeerSelector(builder);
         // return nil
         lua_pushnil(L);
         return 1;
@@ -160,6 +176,24 @@ namespace i2p
         // invalid args
         return luaL_error(L, "bad arguments, reqires destination and function, got %d arguments", n);
       }
+    }
+
+    void TunnelPathBuilder::PushHop(const std::string & ident) {
+      std::lock_guard<std::mutex> lock(hopsMutex);
+      i2p::data::IdentHash ih;
+      ih.FromBase64(ident);
+      hops.push_back(ih);
+    }
+
+    void TunnelPathBuilder::Visit(HopVistitor v) {
+      std::lock_guard<std::mutex> lock(hopsMutex);
+      for (const auto & hop : hops)
+        v(hop);
+    }
+
+    size_t TunnelPathBuilder::GetHops() {
+      std::lock_guard<std::mutex> lock(hopsMutex);
+      return hops.size();
     }
   }
 }
