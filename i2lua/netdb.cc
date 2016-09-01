@@ -2,6 +2,7 @@
 #include "netdb.hpp"
 
 #include "i2pd/NetDb.h"
+#include "i2pd/Log.h"
 
 namespace i2p
 {
@@ -15,7 +16,6 @@ namespace lua
 
   size_t VisitRandomRoutersByFilter(IRouterInfoVisitor * v, IRouterInfoFilter * f, size_t n)
   {
-    std::clog << "visit " << n << " random" << std::endl;
     return i2p::data::netdb.VisitRandomRouterInfos([f] (std::shared_ptr<const i2p::data::RouterInfo> ri) -> bool {
         return f->Filter(ri);
       }, [v] (std::shared_ptr<const i2p::data::RouterInfo> ri) {
@@ -67,18 +67,19 @@ namespace lua
       filterfunc(filter) {}
 
     virtual bool Filter(RI ri) {
-      LogPrinter log{std::cerr};
-      lua_pushlightuserdata(L, &log);
-      lua_pushcclosure(L, i2p::lua::writeStacktrace, 1);
-      int errfunc = lua_gettop(L);
+      lua_pushcfunction(L, writeStacktrace);
+      int err = lua_gettop(L);
       lua_pushvalue(L, filterfunc);
       pushRouterInfo(L, ri);
-      int result = lua_pcall(L, 1, 1, errfunc);
+      int result = lua_pcall(L, 1, 1, err);
       bool ret = false;
       if(result == LUA_OK) {
         ret = lua_toboolean(L, -1) == 1;
+      } else {
+        // call errored
+        LogPrint(eLogError, "Lua: error in netdb filter ", luaL_checkstring(L, -1));
       }
-      lua_pop(L, 2);
+      lua_pop(L, 2); // result of call and error handler
       return ret;
     }
   private:
@@ -95,18 +96,16 @@ namespace lua
       visitfunc(visit) {}
     
     virtual void VisitRouterInfo(RI ri) {
-      LogPrinter log{std::cerr};
-      lua_pushlightuserdata(L, &log);
-      lua_pushcclosure(L, i2p::lua::writeStacktrace, 1);
-      int errfunc = lua_gettop(L);
+      lua_pushcfunction(L, writeStacktrace);
+      int err = lua_gettop(L);
       lua_pushvalue(L, visitfunc);
       pushRouterInfo(L, ri);
-      int result = lua_pcall(L, 1, 0, errfunc);
+      int result = lua_pcall(L, 1, 1, err);
       if(result == LUA_OK) {
         // we good
       } else {
-        // an error
-        lua_pop(L, 1);
+        // error
+        LogPrint(eLogError, "Lua: failed to visit RI ident=", ri->GetIdentHashBase64(), " ", luaL_checkstring(L, -1));
       }
       lua_pop(L, 2);
     }
@@ -153,16 +152,23 @@ namespace lua
     if ( n == 3) {
       int isint = 0;
       i = lua_tointegerx(L, 1, &isint);
-      if (isint && lua_isfunction(L, 2) && lua_isfunction(L, 3)) {
-        if(i <= 0)
-          return luaL_error(L, "cannot iterate over %d router infos", i);
-        {
-          LuaRouterInfoFilter f(L, 2);
-          LuaRouterInfoVisitor v(L, 3);
-          visited = VisitRandomRoutersByFilter(&v, &f, i);
+      if (isint) {
+        if( lua_isfunction(L, 2) && lua_isfunction(L, 3)) { 
+          if(i <= 0) {
+            LogPrint(eLogError, "Lua: cannot iterate over ", i, " routers");
+          } else {
+            LuaRouterInfoFilter f(L, 2);
+            LuaRouterInfoVisitor v(L, 3);
+            visited = VisitRandomRoutersByFilter(&v, &f, i);
+          }
+        } else {
+          LogPrint(eLogError, "Lua: bad arguments to VisitRandomRIWithFilter, arguments 2 or 3 are not functions");
         }
+      } else {
+        LogPrint(eLogError, "Lua: bad arguments to VisitRandomRIWithFilter, argument 1 is not integer");
       }
-      lua_pop(L, 3);
+    } else {
+      LogPrint(eLogError, "Lua: bag arguments to VisitRandomRIWithFilter");
     }
     lua_pushinteger(L, visited);
     return 1;    

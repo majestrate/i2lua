@@ -20,7 +20,8 @@ namespace i2p
       {"NewDestination", l_CreateDestination},
       {"DelDestination", l_DestroyDestination},
       {"DestinationSetPeerSelector", l_SetDestinationPeerSelector},
-      {"RunDestination", l_RunDestination},
+      {"WaitDestination", l_WaitDestination},
+      {"StopDestination", l_StopDestination},
       {"GetDestinationAddress", l_DestinationGetB32},
       {0, 0}
     };

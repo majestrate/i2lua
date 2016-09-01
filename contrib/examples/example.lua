@@ -3,8 +3,7 @@ i2lua = assert(loadfile("runtime.lua"))()
 
 -- this function returns true if we want to use this RI in tunnel building at hop
 function filterRI(ri, hopNumber, inbound)
-   i2lua.PrintTable(ri)
-   if hopNumber == 0 then
+   if hopNumber == 1 then
       -- for first hop we want to only use floodfill routers that are reachable
       return ri.reachable and ri.floodfill
    else
@@ -20,9 +19,7 @@ local function main()
    print("create destination")
    -- create a new destination
    local dest = i2lua.Destination.new("privatekeys.dat")
-   local onReady = function(d)
-      d:setPeerSelector(selector)
-   end
+   dest:setPeerSelector(selector)
    dest:run(function(d)
          print("we are", dest:base32())
    end)
@@ -34,3 +31,4 @@ i2lua.Init("i2lua.conf")
 -- run mainloop
 print("run i2p")
 i2lua.RunI2P(main)
+print("exited")

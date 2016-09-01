@@ -25,19 +25,8 @@ namespace i2p
 
     int writeStacktrace(lua_State* L) {
       std::stringstream s;
-      int top = lua_gettop(L);
-      if (top == 2) {
-        std::string msg = luaL_checkstring(L, 1);
-        LogPrinter * log = (LogPrinter *) lua_touserdata(L, 1);
-        log->out << "error: " << msg << std::endl;
-        generateStacktrace(L, log->out);
-        s << "stack dumped" << std::endl;
-      } else if (top == 1) {
-        s << luaL_checkstring(L, 1) << std::endl;
-        generateStacktrace(L, s);
-      } else {
-        s << "unknown error wtflol" << std::endl;
-      }
+      s << luaL_checkstring(L, 1) << std::endl;
+      generateStacktrace(L, s);
       lua_pushstring(L, s.str().c_str());
       return 1;
     }

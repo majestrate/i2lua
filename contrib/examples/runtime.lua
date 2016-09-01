@@ -12,52 +12,29 @@ I2Lua.PeerSelector = {}
 -- create a new peer selector with function f that filters the ri
 function I2Lua.PeerSelector.new(f)
    return setmetatable({
-         _filter = f,
-         _push = nil,
-         _hop = 0,
-         _inbound = false,
-         _filterRI = 0,
-         _selectPeers = 0,
-         _nop = 0,
+         _select = function(push, hops, inbound, wut)
+
+            local hop = 1
+            -- set is inbound
+            -- do selection
+            local filter = function(ri)
+               local r = f(ri, hop, inbound)
+               if r == true then
+                  hop = hop + 1
+               end
+            end
+            local pushhop = function(ri)
+               push(ri.ident)
+            end
+            local selected = i2p.VisitRandomRIWithFilter(hops, filter, pushhop)
+            -- clear push function
+            return selected == hops
+         end,
+
    }, PeerSelector)
 end
 
 setmetatable(I2Lua.PeerSelector, {__call = function(_, ...) return I2Lua.PeerSelector.new(...) end})
-
--- function for filtering RI
-function I2Lua.PeerSelector:_filterRI(self, ri)
-   local hop = self._hop
-   local result = self:_filter(ri, _hop, self._inbound)
-   if result == true then
-      -- we accepted this hop, increment our hop counter
-      self._hop = hop + 1
-      print("selected hop", self._hop)
-   end
-   return result
-end
-
--- select peers 
-function I2Lua.PeerSelector:_selectPeers(self, push, hops, inbound)
-   print("select peers")
-   -- set push function
-   self._push = push
-   -- clear last hop number
-   self._hop = 0
-   -- set is inbound
-   self._inbound = inbound
-   -- do selection
-   local filter = function(ri)
-      I2Lua.PrintTable(ri)
-      return self:_filterRI(ri)
-   end
-   local pushhop = function(ri)
-      self:_push(ri.ident)
-   end
-   local selected = i2p.VisitRandomRIWithFilter(filter, pushhop, hops)
-   -- clear push function
-   self._push = nil
-   return selected == hops
-end
 
 I2Lua.Destination = {}
 
@@ -75,12 +52,12 @@ function I2Lua.Destination.new(keyfile)
             print("destination created", self._dest)
             if self._selector ~= 0 then
                local _selectPeers = function(push, hops, inbound)
-                  print(push, hops, inbound)
+                  print("Select peers", self._selector, push, hops, inbound)
                   I2Lua.PrintTable(self._selector)
-                  return self._selector:_selectPeers(push, hops, inbound)
+                  return self._selector._select(push, hops, inbound)
                end
                i2p.DestinationSetPeerSelector(self._dest, _selectPeers)
-               print("using peer selector", _selectPeers)
+               print("using peer selector", _selectPeers, self._selector)
             end
          end,
          base32 = function(self)
@@ -98,7 +75,6 @@ function I2Lua.Destination.new(keyfile)
             if running ~= nil then
                running(dest)
             end
-            i2p.RunDestination(dest)
          end
                        }, I2Lua.Destination)
 end

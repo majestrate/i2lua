@@ -31,7 +31,7 @@ namespace i2p
     // wrapper for Client Destination
     struct Destination {
       typedef i2p::data::PrivateKeys Keys;
-      typedef std::function<int(lua_State*)> ThreadAccessor;
+      typedef std::function<void(lua_State*)> ThreadAccessor;
       Destination(const Keys & keys);
       std::shared_ptr<i2p::client::ClientDestination> Dest;
       std::promise<void> done;
@@ -43,24 +43,8 @@ namespace i2p
       /** wait until done using mutex*/
       void Wait(std::unique_lock<std::mutex> & l);
       
-      /** do concurrent access with thread, from another thread, return value returned by access(thread) */
-      int AccessThread(ThreadAccessor access) {
-        std::promise<int> p;
-        // call async
-        service.post([&] () {
-            std::lock_guard<std::mutex> lock(threadaccess);
-            p.set_value(access(thread));
-        });
-        // get result
-        auto f = p.get_future();
-        f.wait();
-        return f.get();
-      }
-      
       lua_State* thread; // destination thread
-      std::mutex threadaccess; // mutex for accessing thread
-
-      boost::asio::io_service service;
+      bool running;
     };
 
     struct LuaTunnelPeerSelector : public i2p::tunnel::ITunnelPeerSelector
@@ -75,6 +59,7 @@ namespace i2p
        
       Destination * dest;
       int callback;
+      std::mutex callmtx;
     };
 
 
@@ -94,17 +79,23 @@ namespace i2p
      */
     int l_SetDestinationPeerSelector(lua_State* L);
     /**
-        start destination and block until done 
+        wait for the destination to complete execution
         f(destination)
     */
-    int l_RunDestination(lua_State* L);
+    int l_WaitDestination(lua_State* L);
     /**
-       terminate destination
+       stop the destination run
        desination is unusable after this call
        f(destination)
      */
-    int l_DestroyDestination(lua_State* L);
+    int l_StopDestination(lua_State* L);
 
+    /** 
+        explicit free of destination light user data
+        only call after destination is stoped and completed execution
+     */
+    int l_DestroyDestination(lua_State* L);
+    
     /**
        push the base64'd identhash for a hop into a tunnelPath
        f(tunnelPath, hop)
