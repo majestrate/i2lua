@@ -7,8 +7,9 @@ function filterRI(ri, hopNumber, inbound)
       -- for first hop we want to only use floodfill routers that are reachable
       return ri.reachable and ri.floodfill
    else
-      -- for all other hops we only care about reachability
-      return ri.reachable
+      print("check hop", hopNumber)
+      -- for all other hops we want whatever
+      return true
    end
 end
 

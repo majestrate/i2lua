@@ -125,7 +125,6 @@ namespace i2p
       try { 
         done.set_value();
       } catch( std::future_error &) {}
-      service.stop();      
       p.set_value();
     }
 
@@ -134,12 +133,8 @@ namespace i2p
     }
     
     void Destination::Run() {
-      auto work = std::make_shared<boost::asio::io_service::work>(service);
       Dest->Start();
-      LogPrint(eLogInfo, "Lua: destination started");
       done.get_future().wait();
-      work.reset();
-      LogPrint(eLogInfo, "Lua: io service work exited");
       waiter.notify_all();
     }
 
