@@ -4,6 +4,7 @@ add_definitions("-std=c++14")
 find_package("Lua")
 set(I2LUA_NAME "i2lua")
 set(I2LUA_SRC
+  "i2lua/interpreter.cc"
   "i2lua/log.cc"
   "i2lua/main.cc"
   "i2lua/netdb.cc"

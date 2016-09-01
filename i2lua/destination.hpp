@@ -1,6 +1,7 @@
 #ifndef SRC_CORE_LUA_DESTINATION_HPP_
 #define SRC_CORE_LUA_DESTINATION_HPP_
 #include <lua.hpp>
+#include <future>
 #include <memory>
 #include "i2pd/Destination.h"
 #include "i2pd/Identity.h"
@@ -10,20 +11,6 @@ namespace i2p
 {
   namespace lua
   {    
-    struct LuaTunnelPeerSelector : public i2p::tunnel::ITunnelPeerSelector
-    {
-      
-      
-      LuaTunnelPeerSelector(lua_State* L, int callback);
-      ~LuaTunnelPeerSelector();
-      
-      virtual bool SelectPeers(TunnelPath & peer, int hops, bool isInbound);
-       
-      lua_State* L; // called in destination thread
-      int callback;
-      int thread;
-      std::mutex LMutex;
-    };
 
     /**
        
@@ -44,15 +31,54 @@ namespace i2p
     // wrapper for Client Destination
     struct Destination {
       typedef i2p::data::PrivateKeys Keys;
+      typedef std::function<int(lua_State*)> ThreadAccessor;
       Destination(const Keys & keys);
       std::shared_ptr<i2p::client::ClientDestination> Dest;
       std::promise<void> done;
+      std::condition_variable waiter;
       void Start();
       void Run();
       /** inform promise when destination is stopped, this function returns immediately */
-      void Stop(std::promise<void> & p);
+      void Stop(std::promise<void>& p);
+      /** wait until done using mutex*/
+      void Wait(std::unique_lock<std::mutex> & l);
+      
+      /** do concurrent access with thread, from another thread, return value returned by access(thread) */
+      int AccessThread(ThreadAccessor access) {
+        std::promise<int> p;
+        // call async
+        service.post([&] () {
+            std::lock_guard<std::mutex> lock(threadaccess);
+            p.set_value(access(thread));
+        });
+        // get result
+        auto f = p.get_future();
+        f.wait();
+        return f.get();
+      }
+      
+      lua_State* thread; // destination thread
+      std::mutex threadaccess; // mutex for accessing thread
+
+      boost::asio::io_service service;
     };
 
+    struct LuaTunnelPeerSelector : public i2p::tunnel::ITunnelPeerSelector
+    {      
+      typedef std::tuple<TunnelPath, bool> SelectResult;
+        
+      
+      LuaTunnelPeerSelector(Destination * d, int callback);
+      ~LuaTunnelPeerSelector();
+      
+      virtual bool SelectPeers(TunnelPath & peer, int hops, bool isInbound);
+       
+      Destination * dest;
+      int callback;
+    };
+
+
+    
     /** 
         create a new destination, does not start it
         f(keyfile, callback)
@@ -84,6 +110,12 @@ namespace i2p
        f(tunnelPath, hop)
      */
     int l_TunnelPathPushHop(lua_State* L);
+
+    /** 
+        get destination b32 address
+        f(destination) returns string
+     */
+    int l_DestinationGetB32(lua_State* L);
   }
 }
 

@@ -16,12 +16,12 @@ namespace i2p
       {"Wait", l_WaitUntilDone},
       {"Sleep", l_Sleep},
       {"VisitRIByHash", l_VisitRIByHash},
-      {"VisitRIWithFilter", l_VisitRIWithFilter},
       {"VisitRandomRIWithFilter", l_VisitRandomRIWithFilter},
       {"NewDestination", l_CreateDestination},
       {"DelDestination", l_DestroyDestination},
       {"DestinationSetPeerSelector", l_SetDestinationPeerSelector},
       {"RunDestination", l_RunDestination},
+      {"GetDestinationAddress", l_DestinationGetB32},
       {0, 0}
     };
   }

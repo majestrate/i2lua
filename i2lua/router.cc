@@ -4,6 +4,7 @@
 #include <future>
 #include <iostream>
 #include <string>
+#include "i2pd/ClientContext.h"
 #include "i2pd/Config.h"
 #include "i2pd/Tunnel.h"
 #include "i2pd/Transports.h"
@@ -50,9 +51,12 @@ namespace i2p
         i2p::log::Logger().Ready();
         i2p::crypto::InitCrypto(false);
         i2p::context.Init();
+        i2p::context.SetReachable();
+        i2p::context.SetStatus(eRouterStatusTesting);
         i2p::data::netdb.Start();
         i2p::transport::transports.Start();
         i2p::tunnel::tunnels.Start();
+        i2p::client::context.Start();
       } catch( std::runtime_error & ex ) {
         msg = (char*) ex.what();
       }

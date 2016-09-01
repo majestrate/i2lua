@@ -26,9 +26,6 @@ namespace lua
     typedef std::shared_ptr<const i2p::data::RouterInfo> RI;
     virtual void VisitRouterInfo(RI ri) = 0;
   };
-  
-  /** iterate over the netdb, filter matches, if exclude is true then the filter will be inverted */
-  void VisitRoutersByFilter(IRouterInfoVisitor * visitor, IRouterInfoFilter * filter, bool exclude=false);
 
   /** visit N random router infos that match a filter, return how many we actually visited */
   size_t VisitRandomRouterByFilter(IRouterInfoVisitor * visitor, IRouterInfoFilter * filter, size_t n);
@@ -38,12 +35,6 @@ namespace lua
    *   visitor(ri) 
    */
   int l_VisitRIByHash(lua_State *L);
-  /**
-   *   f(visitor, filter)
-   *   visitor(ri)
-   *   filter(ri) returns bool
-   */
-  int l_VisitRIWithFilter(lua_State *L);
   /**
    *   f(visitor, filter, max)
    *   visitor(ri)
