@@ -13,7 +13,7 @@ dependancies:
 * libssl
 * zlib
 
-building:
+building ( this will fetch lua over the network )
 
     mkdir ~/git/
     git clone https://github.com/majestrate/i2lua ~/git/i2lua
