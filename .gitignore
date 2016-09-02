@@ -7,4 +7,5 @@
 *.o
 
 # cmake build directory
-build
+build/
+deps/

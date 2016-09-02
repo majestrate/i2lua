@@ -7,22 +7,24 @@ Right now I2Lua's API is subject to change at any time so be warned things will 
 dependancies:
 
 * a modern c++ compiler
-* lua 5.2
 * git
 * cmake
 * boost
 * libssl
+* zlib
 
 building:
 
-    git clone --recursive https://github.com/majestrate/i2lua 
-    cd i2lua
-    mkdir build
-    cmake ..
-    make
+    mkdir ~/git/
+    git clone https://github.com/majestrate/i2lua ~/git/i2lua
+    mkdir /tmp/i2lua
+    cd /tmp/i2lua
+    cmake ~/git/i2lua
+    make -j4
 
 running:
 
-    ./build/i2lua ./contrib/examples/example.lua
+    cd ~/git/i2lua/contrib/examples/
+    /tmp/i2lua/i2lua example.lua
 
 see [here](contrib/examples/) for example scripts (work in progress)
