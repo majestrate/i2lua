@@ -25,7 +25,7 @@ namespace lua
 
   
   // push router info as meta table onto stack, return stack index of meta table
-  void pushRouterInfo(lua_State *L, std::shared_ptr<const i2p::data::RouterInfo> ri) {
+  void push_RouterInfo(lua_State *L, std::shared_ptr<const i2p::data::RouterInfo> ri) {
     lua_newtable(L);
     int table = lua_gettop(L);
     // floodfill
@@ -70,7 +70,7 @@ namespace lua
       lua_pushcfunction(L, writeStacktrace);
       int err = lua_gettop(L);
       lua_pushvalue(L, filterfunc);
-      pushRouterInfo(L, ri);
+      push_RouterInfo(L, ri);
       int result = lua_pcall(L, 1, 1, err);
       bool ret = false;
       if(result == LUA_OK) {
@@ -99,7 +99,7 @@ namespace lua
       lua_pushcfunction(L, writeStacktrace);
       int err = lua_gettop(L);
       lua_pushvalue(L, visitfunc);
-      pushRouterInfo(L, ri);
+      push_RouterInfo(L, ri);
       int result = lua_pcall(L, 1, 1, err);
       if(result == LUA_OK) {
         // we good
@@ -135,7 +135,7 @@ namespace lua
     // push callback
     lua_pushvalue(L, 2);
     if(ri)
-      pushRouterInfo(L, ri);
+      push_RouterInfo(L, ri);
     else
       lua_pushnil(L);
     // call callback

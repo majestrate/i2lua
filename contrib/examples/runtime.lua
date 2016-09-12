@@ -10,9 +10,11 @@ end
 I2Lua.PeerSelector = {}
 
 -- create a new peer selector with function f that filters the ri
-function I2Lua.PeerSelector.new(f)
+function I2Lua.PeerSelector.new(f, success, fail)
    return setmetatable({
-         _select = function(push, hops, inbound, wut)
+         _success = success,
+         _fail = fail,
+         _select = function(push, hops, inbound)
 
             local hop = 1
             -- set is inbound
@@ -22,11 +24,13 @@ function I2Lua.PeerSelector.new(f)
                if r == true then
                   hop = hop + 1
                end
+               return r
             end
             local pushhop = function(ri)
                push(ri.ident)
             end
             local selected = i2p.VisitRandomRIWithFilter(hops, filter, pushhop)
+            print("Selected", selected)
             -- clear push function
             return selected == hops
          end,
@@ -56,7 +60,13 @@ function I2Lua.Destination.new(keyfile)
                   I2Lua.PrintTable(self._selector)
                   return self._selector._select(push, hops, inbound)
                end
-               i2p.DestinationSetPeerSelector(self._dest, _selectPeers)
+               local _buildSuccess = function(hops, inbound)
+                  self._selector._success(hops, inbound)
+               end
+               local _buildFail = function(hops, inbound)
+                  self._selector._fail(hops, inbound)
+               end
+               i2p.DestinationSetPeerSelector(self._dest, _selectPeers, _buildSuccess, _buildFail)
                print("using peer selector", _selectPeers, self._selector)
             end
          end,

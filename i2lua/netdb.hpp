@@ -12,6 +12,8 @@ namespace lua
 {
   const std::shared_ptr<i2p::data::RouterInfo> FindRouterByHash(const std::string & hash);
 
+  void push_RouterInfo(lua_State* L, std::shared_ptr<const i2p::data::RouterInfo> ri);
+  
   /** interface defining a router info filter algorithm */
   struct IRouterInfoFilter
   {
@@ -36,7 +38,7 @@ namespace lua
    */
   int l_VisitRIByHash(lua_State *L);
   /**
-   *   f(visitor, filter, max)
+   *   f(max, filter, visitor)
    *   visitor(ri)
    *   filter(ri) returns bool
    */

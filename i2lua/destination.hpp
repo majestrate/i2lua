@@ -47,18 +47,21 @@ namespace i2p
       bool running;
     };
 
-    struct LuaTunnelPeerSelector : public i2p::tunnel::ITunnelPeerSelector
+    class LuaTunnelPeerSelector : public i2p::tunnel::ITunnelPeerSelector
     {      
       typedef std::tuple<TunnelPath, bool> SelectResult;
         
-      
-      LuaTunnelPeerSelector(Destination * d, int callback);
+    public:
+      LuaTunnelPeerSelector(Destination * d, int select_peers, int build_success, int build_timeout);
       ~LuaTunnelPeerSelector();
       
       virtual bool SelectPeers(TunnelPath & peer, int hops, bool isInbound);
-       
+      virtual bool OnBuildResult(TunnelPath & peer, bool isInbound, i2p::tunnel::TunnelBuildResult result);
+    private:
       Destination * dest;
-      int callback;
+      int select_peers_callback;
+      int build_success_callback;
+      int build_fail_callback;
       std::mutex callmtx;
     };
 
@@ -73,11 +76,17 @@ namespace i2p
 
     /** 
         set tunnel build peer selector
-        f(destination, callback)
-        callback(pushhop, hops, isInbound) for every tunnel build
-        callback must return true if selected enough peers otherwise must return false
+        f(destination, select_callback, success_callback, fail_callback)
+
+        select_callback(pushhop, hops, isInbound) for every tunnel build
+        select_callback must return true if selected enough peers otherwise must return false
+
+        success_callback(list_of_hops, isInbound) for every successful build
+
+        fail_callback(list_of_hops, isInbound) for every failed build
      */
     int l_SetDestinationPeerSelector(lua_State* L);
+    
     /**
         wait for the destination to complete execution
         f(destination)

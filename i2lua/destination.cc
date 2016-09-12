@@ -1,4 +1,5 @@
 #include "destination.hpp"
+#include "netdb.hpp"
 #include "log.hpp"
 #include "i2pd/Destination.h"
 #include "i2pd/Log.h"
@@ -138,7 +139,8 @@ namespace i2p
       waiter.notify_all();
     }
 
-    LuaTunnelPeerSelector::LuaTunnelPeerSelector(Destination * d, int cb) : dest(d), callback(cb) {}
+    LuaTunnelPeerSelector::LuaTunnelPeerSelector(Destination * d, int selectpeers, int build_success, int build_fail) :
+      dest(d), select_peers_callback(selectpeers), build_success_callback(build_success), build_fail_callback(build_fail) {}
 
     LuaTunnelPeerSelector::~LuaTunnelPeerSelector() {}
 
@@ -170,7 +172,7 @@ namespace i2p
       lua_pushcclosure(L, writeStacktrace, 1);
       int err = lua_gettop(L);
       // call callback (2)
-      lua_pushvalue(L, callback);
+      lua_pushvalue(L, select_peers_callback);
       // arg 1 (3)
       lua_pushlightuserdata(L, &builder);
       lua_pushcclosure(L, l_PushPath, 1);
@@ -207,21 +209,82 @@ namespace i2p
       return r;
     }
 
+    static void push_TunnelPath(lua_State* L, const std::vector<std::shared_ptr<const i2p::data::IdentityEx> > & peers)
+    {
+      auto numpeers = peers.size();
+      lua_createtable(L, numpeers, 0);
+      int table = lua_gettop(L);
+      lua_Integer i = 1;
+      for ( const auto & peer : peers)
+      {
+        if (peer)
+        {
+          auto ri = i2p::data::netdb.FindRouter(peer->GetIdentHash());
+          if (ri == nullptr)
+            lua_pushnil(L);
+          else
+            push_RouterInfo(L, ri);
+        }
+        else
+          lua_pushnil(L);
+        lua_rawseti(L, table, i);
+        ++i;
+      }
+    }
+
+    bool LuaTunnelPeerSelector::OnBuildResult(TunnelPath & peer, bool isInbound, i2p::tunnel::TunnelBuildResult result)
+    {
+      lua_State * L = dest->thread;
+      LogPrint(eLogDebug, "Lua: OnBuildResult");
+      // add log handler (1)
+      LogPrinter log{std::cout};
+      lua_pushlightuserdata(L, &log);
+      lua_pushcclosure(L, writeStacktrace, 1);
+      int err = lua_gettop(L);
+      // call callback (2)
+      if(result == i2p::tunnel::eBuildResultOkay)
+        lua_pushvalue(L, build_success_callback);
+      else
+        lua_pushvalue(L, build_fail_callback);
+      // arg 1 (3)
+      push_TunnelPath(L, peer);
+      // arg 2 (4)
+      lua_pushboolean(L, isInbound);
+      // call
+      auto res = lua_pcall(L, 2, 1, err);
+      if(res == LUA_OK) {
+        // success (2)
+        LogPrint(eLogDebug, "Lua: OnBuildResult called okay");
+      } else {
+        LogPrint(eLogError, "Lua: error in OnBuildResult ", luaL_checkstring(L, -1));
+      }
+      lua_pop(L, 1);
+      return true;
+    }
+    
     int l_SetDestinationPeerSelector(lua_State* L) {
       int n = lua_gettop(L);
-      if(n == 2 && lua_islightuserdata(L, 1) && lua_isfunction(L, 2)) {
+      if(n == 4 && lua_islightuserdata(L, 1) && lua_isfunction(L, 2) && lua_isfunction(L, 3) && lua_isfunction(L, 4)) {
         // valid args
         auto dest = getDestination(L, 1);
         // create new thread (3)
         dest->thread = lua_newthread(L);
         int thread = lua_gettop(L);
-        // give callback to new thread
+        // give select peers callback to new thread
         lua_pushvalue(L, 2); // (4)
         lua_xmove(L, dest->thread, 1); // (3)
-        // get callback
-        int callback = lua_gettop(dest->thread);
+        int selectPeers = lua_gettop(dest->thread);
+        // give success callback to new thread
+        lua_pushvalue(L, 3);
+        lua_xmove(L, dest->thread, 1);
+        int buildSuccess = lua_gettop(dest->thread);
+        // give fail callback to new thread
+        lua_pushvalue(L, 4);
+        lua_xmove(L, dest->thread, 1);
+        int buildFail = lua_gettop(dest->thread);
+        
         // create builder
-        auto builder = std::make_shared<LuaTunnelPeerSelector>(dest, callback);
+        auto builder = std::make_shared<LuaTunnelPeerSelector>(dest, selectPeers, buildSuccess, buildFail);
         // set it
         dest->Dest->GetTunnelPool()->SetCustomPeerSelector(builder);
         // return thread (should be on top of stack)
