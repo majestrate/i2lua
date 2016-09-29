@@ -4,6 +4,7 @@
 #include "destination.hpp"
 #include "netdb.hpp"
 #include "router.hpp"
+#include "profile.hpp"
 
 namespace i2p
 {
@@ -23,6 +24,9 @@ namespace i2p
       {"WaitDestination", l_WaitDestination},
       {"StopDestination", l_StopDestination},
       {"GetDestinationAddress", l_DestinationGetB32},
+      {"GetRouterProfile", l_GetRouterProfile},
+      {"BanRouterByHash", l_BanRouterProfile},
+      {"UnbanRouterByHash", l_UnbanRouterProfile},
       {0, 0}
     };
   }

@@ -22,7 +22,7 @@ include(ExternalProject)
 ExternalProject_Add(${I2P_PROJECT_NAME}
   GIT_REPOSITORY "${I2P_REPO_URL}"
   PATCH_COMMAND cp -av "${I2P_CMAKE_FILES}" "."
-  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PROJECT_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PROJECT_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DWITH_BINARY=OFF)
 
 # lua 5.3
 set(LUA_PROJECT_NAME "lua")
@@ -47,7 +47,8 @@ set(I2LUA_SRC
   "i2lua/netdb.cc"
   "i2lua/router.cc"
   "i2lua/destination.cc"
-  )
+  "i2lua/profile.cc"
+)
 
 
 # i2lua executable
