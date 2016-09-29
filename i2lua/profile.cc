@@ -8,8 +8,9 @@ namespace i2p
 namespace lua
 {
   // push a router profile to the top of the stack for L
-  static void pushRouterProfile(lua_State* L, std::shared_ptr<i2p::data::RouterProfile> profile)
+  static void pushRouterProfile(lua_State* L, const i2p::data::IdentHash & ident)
   {
+    auto profile = i2p::data::GetRouterProfile(ident);
     if(profile == nullptr) {
       lua_pushnil(L);
       return;
@@ -31,6 +32,8 @@ namespace lua
     lua_setfield(L, table, "banned");
     lua_pushboolean(L, profile->IsBad());
     lua_setfield(L, table, "bad");
+    lua_pushstring(L, ident.ToBase64().c_str());
+    lua_setfield(L, table, "ident");
   }
 
   int l_GetRouterProfile(lua_State* L)
@@ -44,8 +47,7 @@ namespace lua
         std::string s(str);
         i2p::data::IdentHash ident;
         ident.FromBase64(s);
-        auto profile = i2p::data::GetRouterProfile(ident);
-        pushRouterProfile(L, profile);
+        pushRouterProfile(L, ident);
       }
     } else {
       lua_pushnil(L);
