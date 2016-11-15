@@ -9,9 +9,9 @@ set(PROJECT_PREFIX "${DEPS_DIR}/prefix/")
 # i2pd
 set(I2P_PROJECT_NAME "i2pd")
 set(I2P_REPO_URL "https://github.com/majestrate/i2pd")
-set(I2P_DIR "${DEPS_DIR}/${I2P_PROJECT_NAME}")
+set(I2P_DIR "${DEPS_DIR}${I2P_PROJECT_NAME}")
 set(I2P_CMAKE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/contrib/cmake-i2pd/")
-set(I2P_ROOT_DOR "${I2P_DIR}/src/")
+set(I2P_ROOT_DIR "${I2P_DIR}/src/")
 set(I2P_INCLUDE_DIR "${PROJECT_PREFIX}/include/i2pd/")
 file(GLOB I2P_CMAKE_FILES "${I2P_CMAKE_DIR}*")
 set(I2P_LIBS "${PROJECT_PREFIX}/lib/libi2pdclient.a" "${PROJECT_PREFIX}lib/libi2pd.a")
@@ -21,6 +21,7 @@ include(ExternalProject)
 
 ExternalProject_Add(${I2P_PROJECT_NAME}
   GIT_REPOSITORY "${I2P_REPO_URL}"
+  UPDATE_COMMAND git pull && git clean -xdf && cp -av "${I2P_CMAKE_FILES}" "."
   PATCH_COMMAND cp -av "${I2P_CMAKE_FILES}" "."
   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PROJECT_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DWITH_BINARY=OFF)
 
