@@ -78,7 +78,7 @@ namespace i2p
         set tunnel build peer selector
         f(destination, select_callback, success_callback, fail_callback)
 
-        select_callback(pushhop, hops, isInbound) for every tunnel build
+        select_callback(pushhop, numhops, isInbound) for every tunnel build
         select_callback must return true if selected enough peers otherwise must return false
 
         success_callback(list_of_hops, isInbound) for every successful build
