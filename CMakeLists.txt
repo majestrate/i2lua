@@ -49,6 +49,7 @@ set(I2LUA_SRC
   "i2lua/router.cc"
   "i2lua/destination.cc"
   "i2lua/profile.cc"
+  "i2lua/stream.cc"
 )
 
 

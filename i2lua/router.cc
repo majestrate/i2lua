@@ -48,7 +48,6 @@ namespace i2p
     int l_StartRouter(lua_State* L) {
       char * msg = nullptr;
       try {
-        i2p::log::Logger().Ready();
         i2p::crypto::InitCrypto(false);
         i2p::context.Init();
         i2p::context.SetReachable();

@@ -116,6 +116,12 @@ namespace i2p
         f(destination) returns string
      */
     int l_DestinationGetB32(lua_State* L);
+
+    /**
+       @brief get destination from lua state at idx on stack
+     */
+    Destination * getDestination(lua_State * L, int idx);
+
   }
 }
 

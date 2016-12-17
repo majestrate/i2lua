@@ -10,7 +10,7 @@ namespace i2p
   namespace lua
   {
     // does not pop stack
-    static Destination * getDestination(lua_State* L, int idx) {
+    Destination * getDestination(lua_State* L, int idx) {
       return (Destination *) lua_touserdata(L, idx);
     }
     
