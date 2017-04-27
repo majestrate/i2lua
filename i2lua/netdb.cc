@@ -1,8 +1,8 @@
 #include "log.hpp"
 #include "netdb.hpp"
 
-#include "i2pd/NetDb.h"
-#include "i2pd/Log.h"
+#include "libi2pd/NetDb.hpp"
+#include "libi2pd/Log.h"
 
 namespace i2p
 {
@@ -23,7 +23,7 @@ namespace lua
       }, n);
   }
 
-  
+
   // push router info as meta table onto stack, return stack index of meta table
   void push_RouterInfo(lua_State *L, std::shared_ptr<const i2p::data::RouterInfo> ri) {
     lua_newtable(L);
@@ -94,7 +94,7 @@ namespace lua
     LuaRouterInfoVisitor(lua_State *state, int visit) :
       L(state),
       visitfunc(visit) {}
-    
+
     virtual void VisitRouterInfo(RI ri) {
       lua_pushcfunction(L, writeStacktrace);
       int err = lua_gettop(L);
@@ -109,12 +109,12 @@ namespace lua
       }
       lua_pop(L, 2);
     }
-    
+
   private:
     lua_State * L;
     int visitfunc;
   };
-  
+
   int l_VisitRIByHash(lua_State *L)
   {
     // get number of args
@@ -153,7 +153,7 @@ namespace lua
       int isint = 0;
       i = lua_tointegerx(L, 1, &isint);
       if (isint) {
-        if( lua_isfunction(L, 2) && lua_isfunction(L, 3)) { 
+        if( lua_isfunction(L, 2) && lua_isfunction(L, 3)) {
           if(i <= 0) {
             LogPrint(eLogError, "Lua: cannot iterate over ", i, " routers");
           } else {
@@ -171,8 +171,8 @@ namespace lua
       LogPrint(eLogError, "Lua: bag arguments to VisitRandomRIWithFilter");
     }
     lua_pushinteger(L, visited);
-    return 1;    
+    return 1;
   }
-  
+
 }
 }

@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 #include <lua.hpp>
-#include "i2pd/RouterInfo.h"
+#include "libi2pd/RouterInfo.h"
 
 namespace i2p
 {
@@ -13,7 +13,7 @@ namespace lua
   const std::shared_ptr<i2p::data::RouterInfo> FindRouterByHash(const std::string & hash);
 
   void push_RouterInfo(lua_State* L, std::shared_ptr<const i2p::data::RouterInfo> ri);
-  
+
   /** interface defining a router info filter algorithm */
   struct IRouterInfoFilter
   {
@@ -32,9 +32,9 @@ namespace lua
   /** visit N random router infos that match a filter, return how many we actually visited */
   size_t VisitRandomRouterByFilter(IRouterInfoVisitor * visitor, IRouterInfoFilter * filter, size_t n);
 
-  /** 
+  /**
    *   f(ident, visitor)
-   *   visitor(ri) 
+   *   visitor(ri)
    */
   int l_VisitRIByHash(lua_State *L);
   /**

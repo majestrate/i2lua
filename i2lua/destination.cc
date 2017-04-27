@@ -1,8 +1,8 @@
 #include "destination.hpp"
 #include "netdb.hpp"
 #include "log.hpp"
-#include "i2pd/Destination.h"
-#include "i2pd/Log.h"
+#include "libi2pd/Destination.h"
+#include "libi2pd/Log.h"
 #include <fstream>
 
 namespace i2p
@@ -13,7 +13,7 @@ namespace i2p
     Destination * getDestination(lua_State* L, int idx) {
       return (Destination *) lua_touserdata(L, idx);
     }
-    
+
     int l_CreateDestination(lua_State * L) {
       int n = lua_gettop(L);
       if (n != 2) {
@@ -41,7 +41,7 @@ namespace i2p
       }
       // read private keys
       std::ifstream f(filepath, std::ifstream::binary);
-      
+
       if (!f.is_open())
         return luaL_error(L, "failed to open key file: %s", keyfile);
       f.seekg(0, std::ios::end);
@@ -114,8 +114,8 @@ namespace i2p
       lua_pushnil(L);
       return 1;
     }
-    
-    
+
+
     Destination::Destination(const Keys & k) : thread(nullptr) {
       Dest = std::make_shared<i2p::client::ClientDestination>(k, true);
     }
@@ -123,7 +123,7 @@ namespace i2p
     void Destination::Stop(std::promise<void> & p) {
       Dest->Stop();
       running = false;
-      try { 
+      try {
         done.set_value();
       } catch( std::future_error &) {}
       p.set_value();
@@ -132,7 +132,7 @@ namespace i2p
     void Destination::Wait(std::unique_lock<std::mutex> & l) {
       waiter.wait(l);
     }
-    
+
     void Destination::Run() {
       Dest->Start();
       done.get_future().wait();
@@ -160,7 +160,7 @@ namespace i2p
       lua_pushnil(L);
       return 1;
     }
-    
+
     bool LuaTunnelPeerSelector::SelectPeers(TunnelPath & peers, int numhops, bool isInbound) {
       lua_State * L = dest->thread;
       bool r = false;
@@ -232,7 +232,7 @@ namespace i2p
       }
     }
 
-    bool LuaTunnelPeerSelector::OnBuildResult(TunnelPath & peer, bool isInbound, i2p::tunnel::TunnelBuildResult result)
+    bool LuaTunnelPeerSelector::OnBuildResult(const TunnelPath & peer, bool isInbound, i2p::tunnel::TunnelBuildResult result)
     {
       lua_State * L = dest->thread;
       LogPrint(eLogDebug, "Lua: OnBuildResult");
@@ -261,7 +261,7 @@ namespace i2p
       lua_pop(L, 1);
       return true;
     }
-    
+
     int l_SetDestinationPeerSelector(lua_State* L) {
       int n = lua_gettop(L);
       if(n == 4 && lua_islightuserdata(L, 1) && lua_isfunction(L, 2) && lua_isfunction(L, 3) && lua_isfunction(L, 4)) {
@@ -282,11 +282,12 @@ namespace i2p
         lua_pushvalue(L, 4);
         lua_xmove(L, dest->thread, 1);
         int buildFail = lua_gettop(dest->thread);
-        
+
         // create builder
-        auto builder = std::make_shared<LuaTunnelPeerSelector>(dest, selectPeers, buildSuccess, buildFail);
+        if(dest->builder) delete dest->builder;
+        dest->builder = new LuaTunnelPeerSelector(dest, selectPeers, buildSuccess, buildFail);
         // set it
-        dest->Dest->GetTunnelPool()->SetCustomPeerSelector(builder);
+        dest->Dest->GetTunnelPool()->SetCustomPeerSelector(dest->builder);
         // return thread (should be on top of stack)
         return 1;
       } else {

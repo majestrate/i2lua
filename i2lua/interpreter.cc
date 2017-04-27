@@ -2,11 +2,11 @@
 #include "i2lua.hpp"
 #include "signal.hpp"
 #include "log.hpp"
-#include "i2pd/ClientContext.h"
-#include "i2pd/Crypto.h"
-#include "i2pd/Tunnel.h"
-#include "i2pd/Transports.h"
-#include "i2pd/NetDb.h"
+#include "libi2pd_client/ClientContext.h"
+#include "libi2pd/Crypto.h"
+#include "libi2pd/Tunnel.h"
+#include "libi2pd/Transports.h"
+#include "libi2pd/NetDb.hpp"
 
 #include <array>
 #include <fstream>
@@ -25,7 +25,7 @@ namespace i2p {
       lua_pushcclosure(L, writeStacktrace, 1);
       errorfunc = lua_gettop(L);
     }
-    
+
     void I2Lua::Stop() {
       i2p::client::context.Stop();
       i2p::tunnel::tunnels.Stop();
@@ -44,10 +44,10 @@ namespace i2p {
       f.seekg(0, std::ios::end);
       const size_t filesize = f.tellg();
       f.seekg(0, std::ios::beg);
-      char chunk[filesize];      
+      char chunk[filesize];
       // read file into memory
       f.read(chunk, filesize);
-      
+
       auto result = luaL_loadbuffer(L, chunk, filesize, filename.c_str());
       // are we all good ?
       if(result == LUA_OK) return true; // yeh return true
@@ -65,11 +65,11 @@ namespace i2p {
         log.out << luaL_checkstring(L, -1) << std::endl;
       }
     }
-    
+
     I2Lua::~I2Lua() {
       Stop(); // this will throw if something bad happens
       lua_close(L);
     }
-    
+
   }
 }

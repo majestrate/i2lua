@@ -1,6 +1,6 @@
 #include "profile.hpp"
-#include "i2pd/Profiling.h"
-#include "i2pd/Identity.h"
+#include "libi2pd/Profiling.h"
+#include "libi2pd/Identity.h"
 #include <memory>
 
 namespace i2p
@@ -78,7 +78,7 @@ namespace lua
           } else {
             // profile->Ban();
           }
-          profile->Save();
+          profile->Save(ident);
         }
       }
     }

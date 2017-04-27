@@ -4,12 +4,12 @@
 #include <future>
 #include <iostream>
 #include <string>
-#include "i2pd/ClientContext.h"
-#include "i2pd/Config.h"
-#include "i2pd/Tunnel.h"
-#include "i2pd/Transports.h"
-#include "i2pd/NetDb.h"
-#include "i2pd/Log.h"
+#include "libi2pd_client/ClientContext.h"
+#include "libi2pd/Config.h"
+#include "libi2pd/Tunnel.h"
+#include "libi2pd/Transports.h"
+#include "libi2pd/NetDb.hpp"
+#include "libi2pd/Log.h"
 
 
 namespace i2p
@@ -44,7 +44,7 @@ namespace i2p
       }
       return luaL_error(L, "bad arguments: %d", n);
     }
-    
+
     int l_StartRouter(lua_State* L) {
       char * msg = nullptr;
       try {
@@ -87,7 +87,7 @@ namespace i2p
       lua_pushnil(L);
       return 1;
     }
-    
+
     int l_Sleep(lua_State* L) {
       int n = lua_gettop(L);
       if ( n != 1 ) {
@@ -112,4 +112,3 @@ namespace i2p
     }
   }
 }
-

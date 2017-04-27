@@ -2,9 +2,9 @@
 #include <signal.h>
 #include <string>
 
-#include "i2pd/Tunnel.h"
-#include "i2pd/Transports.h"
-#include "i2pd/NetDb.h"
+#include "libi2pd/Tunnel.h"
+#include "libi2pd/Transports.h"
+#include "libi2pd/NetDb.hpp"
 #include "signal.hpp"
 
 //

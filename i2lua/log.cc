@@ -1,5 +1,5 @@
 #include "log.hpp"
-#include "i2pd/Log.h"
+#include "libi2pd/Log.h"
 #include <cassert>
 #include <sstream>
 
@@ -11,7 +11,7 @@ namespace i2p
     void generateStacktrace(lua_State* L, std::ostream & out)
     {
       lua_Debug entry;
-      int depth = 0; 
+      int depth = 0;
       while (lua_getstack(L, depth, &entry))  {
         int status = lua_getinfo(L, "Sln", &entry);
         assert(status);

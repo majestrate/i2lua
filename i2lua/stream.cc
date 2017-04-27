@@ -1,7 +1,7 @@
 #include "stream.hpp"
 #include "destination.hpp"
 #include "log.hpp"
-#include "i2pd/ClientContext.h"
+#include "libi2pd_client/ClientContext.h"
 
 namespace i2p
 {
@@ -20,7 +20,7 @@ namespace i2p
     struct StreamRead
     {
       std::shared_ptr<i2p::stream::Stream> stream;
-      size_t read; 
+      size_t read;
       uint8_t * buf;
       int callback;
 
@@ -176,9 +176,9 @@ namespace i2p
       lua_pushvalue(L, 4);
       int callback = lua_gettop(L);
       StreamContext * stream = new StreamContext;
-      // create new thread 
+      // create new thread
       stream->thread = lua_newthread(L);
-      // give callback to thread 
+      // give callback to thread
       lua_pushvalue(L, callback);
       lua_xmove(L, stream->thread, 1);
       stream->callback = lua_gettop(stream->thread);
@@ -213,7 +213,7 @@ namespace i2p
 
     int l_StreamWrite(lua_State * L)
     {
-      
+
       int top = lua_gettop(L);
       if (top != 3) {
         return luaL_error(L, "bad number of arguments: %d", top);

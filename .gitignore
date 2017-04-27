@@ -6,3 +6,16 @@
 # object files
 *.o
 *.a
+
+# build prefix
+prefix/
+
+# lua build stuff
+deps/lua*/src/lua
+deps/lua*/src/luac
+
+# final bin
+i2plua
+
+# private keys
+*.dat
