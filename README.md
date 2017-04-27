@@ -22,6 +22,7 @@ building:
 
 running:
 
-    i2plua ~/git/i2lua/contrib/examples/
+    cd ~/git/i2lua/contrib/examples/custom-tunnel-build
+    ~/git/i2lua/i2plua main.lua
 
 see [here](contrib/examples/) for example scripts (work in progress)
