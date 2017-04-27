@@ -4,7 +4,7 @@ simple lua interpreter wrapping i2pd
 
 Right now I2Lua's API is subject to change at any time so be warned things will probably break
 
-dependancies:
+dependencies:
 
 * a modern c++ compiler
 * git
