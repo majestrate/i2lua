@@ -5,7 +5,4 @@
 
 # object files
 *.o
-
-# cmake build directory
-build/
-deps/
+*.a
