@@ -13,18 +13,15 @@ dependancies:
 * libssl
 * zlib
 
-building ( this will fetch lua over the network )
+building:
 
     mkdir ~/git/
     git clone https://github.com/majestrate/i2lua ~/git/i2lua
-    mkdir /tmp/i2lua
-    cd /tmp/i2lua
-    cmake ~/git/i2lua
-    make -j4
+    cd ~/git/i2lua/
+    make
 
 running:
 
-    cd ~/git/i2lua/contrib/examples/
-    /tmp/i2lua/i2lua example.lua
+    i2plua ~/git/i2lua/contrib/examples/
 
 see [here](contrib/examples/) for example scripts (work in progress)
