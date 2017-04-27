@@ -16,7 +16,7 @@ dependancies:
 building:
 
     mkdir ~/git/
-    git clone https://github.com/majestrate/i2lua ~/git/i2lua
+    git clone --recursive https://github.com/majestrate/i2lua ~/git/i2lua
     cd ~/git/i2lua/
     make
 
