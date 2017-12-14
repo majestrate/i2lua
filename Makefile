@@ -40,7 +40,7 @@ lua-clean:
 
 $(I2PD_ROOT): i2pd-build
 
-i2pd-build:
+i2pd-build: lua
 	$(MAKE) -C $(I2PD_ROOT)
 
 i2pd-clean:
