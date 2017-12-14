@@ -8,10 +8,14 @@ LIB_LUA=$(LUA_INSTALL_PREFIX)/lib/liblua.a
 INC_FLAGS = -I$(LUA_INSTALL_PREFIX)/include
 
 CXXFLAGS = $(INC_FLAGS) -std=c++14
+AR = ar
+
 I2LUA_SRC_DIR= $(REPO_DIR)/i2lua
 SRC = $(wildcard $(I2LUA_SRC_DIR)/*.cc)
 OBJ  = $(SRC:.cc=.o)
+I2LUA_LIB = libi2lua.a
 EXE = i2plua
+
 
 I2PD_ROOT=$(REPO_DIR)/i2pd
 
@@ -24,10 +28,15 @@ LIBS=-lboost_system -lboost_date_time -lboost_filesystem -lboost_program_options
 
 all: $(EXE)
 
-$(EXE): $(I2PD_ROOT) $(LIB_LUA) $(OBJ)
-	$(CXX) -o $(EXE) $(OBJ) $(LIB_LUA) $(LIBI2PD) $(LIBI2PD_CLIENT) $(LIBS)
+$(EXE): $(LIB_LUA) i2pd-build $(I2LUA_LIB)
+	$(CXX) -o $(EXE) $(I2LUA_LIB) $(LIB_LUA) $(LIBI2PD) $(LIBI2PD_CLIENT) $(LIBS)
 
-$(OBJ): $(SRC)
+build-libs: $(LUA_LIB) $(I2LUA_LIB)
+
+$(I2LUA_LIB): $(LUA_LIB) $(OBJ)
+	$(AR) -r $(I2LUA_LIB) $(OBJ)
+
+$(OBJ): $(SRC) $(LIB_LUA)
 
 $(LIB_LUA): lua
 
@@ -40,7 +49,7 @@ lua-clean:
 
 $(I2PD_ROOT): i2pd-build
 
-i2pd-build: lua
+i2pd-build: 
 	$(MAKE) -C $(I2PD_ROOT)
 
 i2pd-clean:
@@ -48,3 +57,4 @@ i2pd-clean:
 
 clean: lua-clean i2pd-clean
 	rm -f $(OBJ)
+	rm -rf $(LUA_INSTALL_PREFIX)
